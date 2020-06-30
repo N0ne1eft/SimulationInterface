@@ -85,5 +85,7 @@ if aniType=="Manual":
     st.write("Current Temp ",g["tmp"]["temp"][tf])
     st.write("Current Ground Temp ",round(g["tmp"]["gtemp"][tf],3))
     st.area_chart(g["tmp"][0:tf],height=100)
-
-st.write("https://github.com/N0ne1eft")
+st.markdown("---")
+st.markdown("### GitHub Repositories")
+st.markdown("[This Web Interface](https://github.com/N0ne1eft/SimulationInterface) **(WIP Random Data)**")
+st.markdown("[Backend Repo](https://github.com/SkymanOne/SpaceShuttleSimulator) **(WIP not intergrated yet)**")
