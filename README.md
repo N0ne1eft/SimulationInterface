@@ -6,3 +6,13 @@ Powered by [StreamLit](https://github.com/streamlit/streamlit)
 [Live Preview](https://simulation.n0ne1eft.info)
 
 [BackEnd API/Library](https://github.com/SkymanOne/SpaceShuttleSimulator) **Under development and not intergrated yet with this UI**
+
+## Installation Guide
+Install StreamLit
+```
+pip3 install streamlit
+```
+Run the GUI.py file
+```
+streamlit run GUI.py
+```
