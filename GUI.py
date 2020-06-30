@@ -1,8 +1,5 @@
 import streamlit as st
-import requests
-from random import *
 import pandas as pd
-import math
 import time
 from Gen import *
 
@@ -57,35 +54,36 @@ if aniType=="Automated":
     for i in range(0,n):
         tf+=1
         spTfPmt.markdown("Curent TimeFrame **"+str(tf)+"**")
-        #spSpdPmt.markdown("The current speed is **"+str(round(speed[tf],4))+" H="+str(round(spd["HSpeed"][tf],4))+" V="+str(round(spd["VSpeed"][tf],4))+"**")
+        spSpdPmt.markdown("The current speed is **"+str(round(g["spd"]["Speed"][tf],4))+" H="+str(round(g["spd"]["HSpeed"][tf],4))+" V="+str(round(g["spd"]["VSpeed"][tf],4))+"**")
         spSpeed.line_chart(g["spd"][0:tf], height=100)
 
-        #spAccPmt.markdown("Current Acceleration **"+str(round(g["acc"][tf],4))+"**")
-        #spAccRefPmt.markdown("The orange line indicates the theoretical maximum acceleration human can withstand")
+        spAccPmt.markdown("Current Acceleration **"+str(round(g["acc"]["Acc"][tf],4))+"**")
+        spAccRefPmt.markdown("The orange line indicates the theoretical maximum acceleration human can withstand")
         spAcc.line_chart(g["acc"][0:tf],height=100)
 
-        #spAltPmt.markdown("The current alt is **"+str(round(alt[tf],4))+"**")
+        spAltPmt.markdown("The current alt is **"+str(round(g["alt"][tf],4))+"**")
         spAlt.area_chart(g["alt"][0:tf],height=100)
 
-        #spTmpPmt.markdown("The current temp is **"+str(temp[tf])+"**")
-        #spGtmpPmt.markdown("The current ground temp is **"+str(round(gtemp[tf],3))+"**")
-        spTmp.area_chart(g["alt"][0:tf],height=100)
+        spTmpPmt.markdown("The current temp is **"+str(g["tmp"]["temp"][tf])+"**")
+        spGtmpPmt.markdown("The current ground temp is **"+str(round(g["tmp"]["gtemp"][tf],3))+"**")
+        spTmp.area_chart(g["tmp"][0:tf],height=100)
         time.sleep(1.0/SimulationSpeed)
 
-# if aniType=="Manual":
-#     tf = st.slider("Current TimeStamp",0,n)
-#     st.write("Current TimeFrame ",tf)
-#     st.write("Current Speed ",round(speed[tf],4))
-#     st.line_chart(spd[0:tf], height=100)
-#
-#     st.write("Current Acceleration ",round(g["acc"][tf],4))
-#     st.line_chart(acc[0:tf],height=100)
-#
-#     st.write("Current Alt ",round(alt[tf],4))
-#     st.area_chart(alt[0:tf],height=100)
-#
-#     st.write("Current Temp ",temp[tf])
-#     st.write("Current Ground Temp ",round(gtemp[tf],3))
-#     st.area_chart(df[0:tf],height=100)
+if aniType=="Manual":
+    tf = st.slider("Current TimeStamp",0,n)
+    st.write("Current TimeFrame ",tf)
+    st.write("Current Speed ",round(g["spd"]["Speed"][tf],4))
+    st.line_chart(g["spd"][0:tf], height=100)
+
+    st.write("Current Acceleration ",round(g["acc"]["Acc"][tf],4))
+    st.markdown("The orange line indicates the theoretical maximum acceleration human can withstand")
+    st.line_chart(g["acc"][0:tf],height=100)
+
+    st.write("Current Alt ",round(g["alt"][tf],4))
+    st.area_chart(g["alt"][0:tf],height=100)
+
+    st.write("Current Temp ",g["tmp"]["temp"][tf])
+    st.write("Current Ground Temp ",round(g["tmp"]["gtemp"][tf],3))
+    st.area_chart(g["tmp"][0:tf],height=100)
 
 st.write("https://github.com/N0ne1eft")
