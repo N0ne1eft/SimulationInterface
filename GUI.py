@@ -37,7 +37,10 @@ def convert(obj):
     for tf in obj:
         timeList.append(tf["timeElapsed"])
         for key in tf["vehicleState"]:
-            arrDict[key].append(tf["vehicleState"][key])
+            if key=="angleBelowHorizontal":
+                arrDict[key].append(tf["vehicleState"][key]*-1)
+            else:
+                arrDict[key].append(tf["vehicleState"][key])
     df = dict()
     df["time"] = timeList
     # Acceleraion df
@@ -123,6 +126,8 @@ def autoSimulation(o):
     spAccPmt = st.empty()
     spAccRefPmt = st.empty()
     spAcc = st.empty()
+    spAngPmt = st.empty()
+    spAng = st.empty()
     spAltPmt = st.empty()
     spAlt = st.empty()
     spDispPmt = st.empty()
@@ -144,6 +149,9 @@ def autoSimulation(o):
 
         spAccPmt.markdown("Current Absolute Acceleration **" + rnd(o.acc["absAcc"][i]) + "**")
         spAcc.line_chart(o.acc[0:i], height=100)
+
+        spAngPmt.markdown("Current Angle below Horizontal **" + rnd(-o.angle["angBelowHor"][i]) + "**")
+        spAng.line_chart(o.angle["angBelowHor"][0:i], height=100)
 
         spAltPmt.markdown("Current Height **" + rnd(o.hgt["height"][i]) + "**")
         spAlt.area_chart(o.hgt[0:i], height=100)
@@ -172,6 +180,9 @@ def manualSimulation(o):
 
     st.markdown("Current Absolute Acceleration **" + rnd(o.acc["absAcc"][i]) + "**")
     st.line_chart(o.acc[0:i], height=100)
+
+    st.markdown("Current Angle below Horizontal **"+rnd(-o.angle["angBelowHor"][i])+"**")
+    st.line_chart(o.angle["angBelowHor"][0:i], height=100)
 
     st.markdown("Current Height **" + rnd(o.hgt["height"][i]) + "**")
     st.area_chart(o.hgt[0:i], height=100)
@@ -215,12 +226,22 @@ def startApp():
         German Nikolishin - [BackEnd Simulation API](https://github.com/SkymanOne/SpaceShuttleSimulator)\n
         Tony Zhang - [Frontend User Interface](https://github.com/N0ne1eft/SimulationInterface)\n
         Will Cliffe - Trojectory Research\n
-        Mattie Lousada Blaazer - Ballisitic Coefficient Research
+        Mattie Lousada Blaazer - Ballisitic Coefficient Research \n
+        ---
+        ## **[Miro Board](https://miro.com/app/board/o9J_kqejVvE=/)**
+        This is the board where we brainstorm and sort out how properties are related \n
+        (Registeration may be required to view the public board)
         """)
     elif aniType == "Automated":
         autoSimulation(convert(fetch(shuttle)))
     elif aniType == "Manual":
         manualSimulation(convert(fetch(shuttle)))
 
+def ComingSoon():
+    st.markdown("# SpaceCraft Landing Simulation UI")
+    st.markdown("# Server Under Maintainence")
+    st.markdown("# Comming Soon!")
+
 if __name__ == '__main__':
+    #ComingSoon()
     startApp()
