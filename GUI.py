@@ -1,44 +1,122 @@
 import streamlit as st
-import pandas as pd
 import time
-from Gen import *
+import requests
+import json
+from pandas import *
+class objectview(object):
+    def __init__(self, d):
+        self.__dict__ = d
 
-st.markdown("# Spacecraft Landing Simulator UI")
-st.markdown("**THIS IS A WIP (WORK IN PROGRESS) DEMO INTENDED FOR TESTING, ALL THE DATA ARE RANDOMLY GENERATED**")
-preset = st.sidebar.selectbox("Select you preset here",("Rocket","SpaceCraft"))
+class SpaceVehicle():
+    Mass = int()
+    AngleBelowHorizontal = float()
+    AngleOfAttack = float()
+    Height = int()
+    Radius = float()
+    Velocity = float()
+    TimeFrame = int()
+    VehicleType = int()
+    def __iter__(self):
+        yield 'Mass', self.Mass
+        yield 'AngleBelowHorizontal', self.AngleBelowHorizontal
+        yield 'AngleOfAttack', self.AngleOfAttack
+        yield 'Height', self.Height
+        yield 'Radius', self.Radius
+        yield 'Velocity', self.Velocity
+        yield 'TimeFrame', self.TimeFrame
+        yield 'VehicleType', self.VehicleType
 
-initialVelocity = st.sidebar.slider("InitialVelocity",0.0,3000.0,500.0)
-initialAngle = st.sidebar.slider("InitialAngle(Vertical)",0.0,90.0,45.0)
-startingAlt = st.sidebar.slider("StartingAlitude",0.0,100000.0,50000.0)
+def rnd(object):
+    return str(round(object,2))
 
-custom = st.sidebar.checkbox("I want to customize advanced varibles")
-#### Default
-groundTemp = 20.0
-if custom:
-    groundTemp = st.sidebar.slider("GroundTemperature",-30,40,20)
-    BallisticCoefficient = st.sidebar.slider("Ballistic Coefficient",1.0,2.0,1.5)
-    noseRad = st.sidebar.slider("NoseConeRadius",0.1,10.0,5.0)
+def convert(obj):
+    arrDict = {}
+    timeList = list()
+    for key in obj[0]["vehicleState"]:
+        arrDict[key] = list()
+    for tf in obj:
+        timeList.append(tf["timeElapsed"])
+        for key in tf["vehicleState"]:
+            arrDict[key].append(tf["vehicleState"][key])
+    df = dict()
+    df["time"] = timeList
+    # Acceleraion df
+    df["acc"] = DataFrame({
+        "absAcc":arrDict["absoluteAcceleration"],
+        "dccLoad":arrDict["decelerationLoad"]
+    })
 
-n = st.sidebar.slider("TFCount",1,100,100)
+    # Angle df
+    df["angle"] = DataFrame({
+        "angBelowHor":arrDict["angleBelowHorizontal"],
+        "angAttack":arrDict["angleOfAttack"],
+    })
 
-@st.cache(persist=True)
-def fetchRandom():
-    g=gen(n,initialVelocity,initialAngle,startingAlt,groundTemp)
-    return {
-        "tmp": pd.DataFrame({"temp":g["temp"],"gtemp":g["gtemp"]}),
-        "spd": pd.DataFrame({"Speed":g["speed"],"VSpeed":g["vspeed"],"HSpeed":g["hspeed"]}),
-        "acc": pd.DataFrame({"Acc":g["acc"],"AccRef":g["accRef"]}),
-        "alt": g["alt"]
-    }
-g = fetchRandom()
+    # Temperature df
+    df["temp"] = DataFrame({
+        "curTemp":arrDict["currentTemperature"],
+        "maxTemp":arrDict["maxTemperature"],
+    })
 
-tf=0
+    # Displacement df
+    df["disp"] = DataFrame({
+        "disp":arrDict["displacement"],
+        "dispEarth":arrDict["displacementAroundEarth"],
+    })
 
-aniType = st.selectbox("Select Simulation Type",("Select a method to begin","Automated","Manual"))
+    # Drag df
+    df["drag"] = DataFrame({
+        "dragCoeff":arrDict["dragCoeff"],
+        "liftToDrag":arrDict["liftToDrag"]
+    })
 
-if aniType=="Automated":
-    SimulationSpeed = st.slider("Select Simulation Speed",1,10,1)
-    # Reserve Space for automated tf incrementation
+    # Height df
+    df["hgt"] = DataFrame({
+        "height":arrDict["height"]
+    })
+
+    # Velocity df
+    df["vec"] = DataFrame({
+        "velocity":arrDict["velocity"]
+    })
+    df["nerdView"] = DataFrame({
+        "time": timeList,
+        "absAcc": arrDict["absoluteAcceleration"],
+        "dccLoad": arrDict["decelerationLoad"],
+        "angBelowHor": arrDict["angleBelowHorizontal"],
+        "angAttack": arrDict["angleOfAttack"],
+        "curTemp": arrDict["currentTemperature"],
+        "maxTemp": arrDict["maxTemperature"],
+        "disp": arrDict["displacement"],
+        "dispEarth": arrDict["displacementAroundEarth"],
+        "dragCoeff": arrDict["dragCoeff"],
+        "liftToDrag": arrDict["liftToDrag"],
+        "height": arrDict["height"],
+        "velocity": arrDict["velocity"]
+    })
+    #st.write(df)
+    detail = st.checkbox("Reload Details for Nerds")
+    if detail:
+        st.write(df["nerdView"])
+    return objectview(df)
+
+def sideBarInput():
+    preset = st.sidebar.selectbox("Select you vehicle here", ("SpaceShuttle", "SpaceCraft"))
+    shuttle = SpaceVehicle()
+    shuttle.Velocity = st.sidebar.slider("InitialVelocity", 5000.0, 20000.0, 10000.0)
+    shuttle.AngleOfAttack = st.sidebar.slider("AttackAngle", 0.0, 90.0, 40.0)
+    shuttle.Height = st.sidebar.slider("StartingAlitude", 10000, 100000, 80000)
+    shuttle.AngleBelowHorizontal = st.sidebar.slider("AngleBelowHorizontal",0.0,90.0,6.0)
+    shuttle.Mass = st.sidebar.slider("Mass",50000,100000,78000)
+    shuttle.Radius = st.sidebar.slider("Radius",5.0,10.0,6.0)
+    shuttle.TimeFrame = st.sidebar.slider("TimeInterval",1,5,1)
+    if preset == "SpaceShuttle": shuttle.VehicleType = 0
+    else: shuttle.VehicleType = 1
+    return shuttle
+
+def autoSimulation(o):
+    SimulationSpeed = st.slider("Select Simulation Speed", 1, 10, 1)
+    spTimePmt = st.empty()
     spTfPmt = st.empty()
     spSpdPmt = st.empty()
     spSpeed = st.empty()
@@ -47,45 +125,102 @@ if aniType=="Automated":
     spAcc = st.empty()
     spAltPmt = st.empty()
     spAlt = st.empty()
+    spDispPmt = st.empty()
+    spDispEarthPmt = st.empty()
+    spDisp = st.empty()
     spTmpPmt = st.empty()
     spGtmpPmt = st.empty()
     spTmp = st.empty()
+    spDragPmt = st.empty()
+    spDragLiftPmt = st.empty()
+    spDrag = st.empty()
 
-    for i in range(0,n):
-        tf+=1
-        spTfPmt.markdown("Curent TimeFrame **"+str(tf)+"**")
-        spSpdPmt.markdown("The current speed is **"+str(round(g["spd"]["Speed"][tf],4))+" H="+str(round(g["spd"]["HSpeed"][tf],4))+" V="+str(round(g["spd"]["VSpeed"][tf],4))+"**")
-        spSpeed.line_chart(g["spd"][0:tf], height=100)
+    for i in range(0, len(o.time)):
+        spTimePmt.markdown("Current Time Elapsed **" + rnd(o.time[i])+"**")
+        spTfPmt.markdown("Curent TimeFrame **" + str(i) + "**")
 
-        spAccPmt.markdown("Current Acceleration **"+str(round(g["acc"]["Acc"][tf],4))+"**")
-        spAccRefPmt.markdown("The orange line indicates the theoretical maximum acceleration human can withstand")
-        spAcc.line_chart(g["acc"][0:tf],height=100)
+        spSpdPmt.markdown("The current velocity is **" + rnd(o.vec["velocity"][i])+"**")
+        spSpeed.line_chart(o.vec[0:i], height=100)
 
-        spAltPmt.markdown("The current alt is **"+str(round(g["alt"][tf],4))+"**")
-        spAlt.area_chart(g["alt"][0:tf],height=100)
+        spAccPmt.markdown("Current Absolute Acceleration **" + rnd(o.acc["absAcc"][i]) + "**")
+        spAcc.line_chart(o.acc[0:i], height=100)
 
-        spTmpPmt.markdown("The current temp is **"+str(g["tmp"]["temp"][tf])+"**")
-        spGtmpPmt.markdown("The current ground temp is **"+str(round(g["tmp"]["gtemp"][tf],3))+"**")
-        spTmp.area_chart(g["tmp"][0:tf],height=100)
-        time.sleep(1.0/SimulationSpeed)
+        spAltPmt.markdown("Current Height **" + rnd(o.hgt["height"][i]) + "**")
+        spAlt.area_chart(o.hgt[0:i], height=100)
 
-if aniType=="Manual":
-    tf = st.slider("Current TimeStamp",0,n)
-    st.write("Current TimeFrame ",tf)
-    st.write("Current Speed ",round(g["spd"]["Speed"][tf],4))
-    st.line_chart(g["spd"][0:tf], height=100)
+        spDispPmt.markdown("Current Displacement is **" + rnd(o.disp["disp"][i]) + "**")
+        spDispEarthPmt.markdown("Current Displacement around Earth **" + rnd(o.disp["dispEarth"][i]) + "**")
+        spDisp.area_chart(o.disp[0:i], height=100)
 
-    st.write("Current Acceleration ",round(g["acc"]["Acc"][tf],4))
-    st.markdown("The orange line indicates the theoretical maximum acceleration human can withstand")
-    st.line_chart(g["acc"][0:tf],height=100)
+        spTmpPmt.markdown("The current temp is **" + rnd(o.temp["curTemp"][i]) + "**")
+        spGtmpPmt.markdown("The maximum temp is **" + rnd(o.temp["maxTemp"][i]) + "**")
+        spTmp.area_chart(o.temp[0:i], height=100)
 
-    st.write("Current Alt ",round(g["alt"][tf],4))
-    st.area_chart(g["alt"][0:tf],height=100)
+        spDragPmt.markdown("Current Drag Coefficient **" + rnd(o.drag["dragCoeff"][i]) + "**")
+        spDragLiftPmt.markdown("Current Lift to Drag **" + rnd(o.drag["liftToDrag"][i]) + "**")
+        spDrag.line_chart(o.drag[0:i], height=100)
+        time.sleep(1.0 / SimulationSpeed)
 
-    st.write("Current Temp ",g["tmp"]["temp"][tf])
-    st.write("Current Ground Temp ",round(g["tmp"]["gtemp"][tf],3))
-    st.area_chart(g["tmp"][0:tf],height=100)
-st.markdown("---")
-st.markdown("### GitHub Repositories")
-st.markdown("[This Web Interface](https://github.com/N0ne1eft/SimulationInterface) **(WIP Random Data)**")
-st.markdown("[Backend Repo](https://github.com/SkymanOne/SpaceShuttleSimulator) **(WIP not intergrated yet)**")
+def manualSimulation(o):
+    i = st.slider("Current TimeFrame",0,len(o.time))
+    st.markdown("**Please drag TimeFrame slider slowly**")
+    st.markdown("Current Time Elapsed **" + rnd(o.time[i]) + "**")
+    st.markdown("Curent TimeFrame **" + str(i) + "**")
+
+    st.markdown("The current velocity is **" + rnd(o.vec["velocity"][i]) + "**")
+    st.line_chart(o.vec[0:i], height=100)
+
+    st.markdown("Current Absolute Acceleration **" + rnd(o.acc["absAcc"][i]) + "**")
+    st.line_chart(o.acc[0:i], height=100)
+
+    st.markdown("Current Height **" + rnd(o.hgt["height"][i]) + "**")
+    st.area_chart(o.hgt[0:i], height=100)
+
+    st.markdown("Current Displacement is **" + rnd(o.disp["disp"][i]) + "**")
+    st.markdown("Current Displacement around Earth **" + rnd(o.disp["dispEarth"][i]) + "**")
+    st.area_chart(o.disp[0:i], height=100)
+
+    st.markdown("The current temp is **" + rnd(o.temp["curTemp"][i]) + "**")
+    st.markdown("The maximum temp is **" + rnd(o.temp["maxTemp"][i]) + "**")
+    st.area_chart(o.temp[0:i], height=100)
+
+    st.markdown("Current Drag Coefficient **" + rnd(o.drag["dragCoeff"][i]) + "**")
+    st.markdown("Current Lift to Drag **" + rnd(o.drag["liftToDrag"][i]) + "**")
+    st.line_chart(o.drag[0:i], height=100)
+
+@st.cache
+def fetch(shuttle):
+    url = "http://localhost:5000/run"
+    res = None
+    #with st.spinner("Performing Calculations   Please Wait"):
+    print(json.dumps(dict(shuttle)))
+    res = requests.post(url,json=dict(shuttle))
+    return res.json()
+
+def startApp():
+    st.markdown("# Spacecraft Landing Simulator UI")
+    aniType = st.sidebar.selectbox("Select Simulation Type", ("Select a method to begin", "Manual","Automated"))
+    shuttle = sideBarInput()
+    if aniType == "Select a method to begin":
+        st.empty()
+        st.markdown("""
+        ## Instructions:
+        Adjust the parameters of the simulation from the side bar \n
+        Select the Simulation Type \n
+        **Automated**:The simulation data will be updated real-time \n
+        **Manual**: Manually adjust the current time \n 
+        ---
+        ## Development Team
+        Follow the link below for Public Github Repositories\n
+        German Nikolishin - [BackEnd Simulation API](https://github.com/SkymanOne/SpaceShuttleSimulator)\n
+        Tony Zhang - [Frontend User Interface](https://github.com/N0ne1eft/SimulationInterface)\n
+        Will Cliffe - Trojectory Research\n
+        Mattie Lousada Blaazer - Ballisitic Coefficient Research
+        """)
+    elif aniType == "Automated":
+        autoSimulation(convert(fetch(shuttle)))
+    elif aniType == "Manual":
+        manualSimulation(convert(fetch(shuttle)))
+
+if __name__ == '__main__':
+    startApp()
