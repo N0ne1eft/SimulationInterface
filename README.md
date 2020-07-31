@@ -1,9 +1,6 @@
 # Spacecraft Landing Simulator UI
+## This repo has been combined to [BackEnd API/Library](https://github.com/SkymanOne/SpaceShuttleSimulator)
 Powered by [StreamLit](https://github.com/streamlit/streamlit)
-
-[Live Preview](https://simulation.n0ne1eft.info)
-
-[BackEnd API/Library](https://github.com/SkymanOne/SpaceShuttleSimulator)
 
 ## Installation Guide
 Install StreamLit
